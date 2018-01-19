@@ -1,33 +1,27 @@
-FROM alpine
+FROM marcioaug/intel-anaconda
 
 LABEL mainteiner="Marcio Augusto Guimarães <marcioaugustosg@gmail.com"
 
-RUN apk add --update --no-cache \
-        git \
+RUN apt-get update && apt-get install -y \
         subversion \
-        openjdk7-jre \
-        perl \
-        patch \
-        bash \
-        perl-dev \
-        coreutils
+        openjdk-8-jre \
+        --no-install-recommends \
+        && rm -rf /var/lib/apt/lists/*
 
-
-RUN apk add --no-cache --virtual .build-deps \
+RUN buildDeps='\
                     unzip \
                     wget \
-                    gcc \
-                    g++ \
-                    make \
-                    curl \
-        && curl -L http://xrl.us/cpanm > /bin/cpanm && chmod +x /bin/cpanm \
+                    cpanminus \
+                    build-essential \
+              '\
+        && apt-get update \
+        && apt-get install -y $buildDeps --no-install-recommends \
+        && rm -rf /var/lib/apt/list/* \
         && cpanm DBI \
-        && mkdir /opt \
         && cd /opt && git clone https://github.com/marcioaug/defects4j \
         && cd defects4j && ./init.sh \
         && echo 'export PATH=/opt/defects4j/framework/bin:$PATH' > /etc/profile.d/defects4j.sh \
         && echo 'export PATH=/opt/defects4j/major/bin:$PATH' > /etc/profile.d/major.sh \
-        && apk del .build-deps
+        && apt-get purge -y --auto-remove $buildDeps
 
 ENV PATH /opt/defects4j/framework/bin:/opt/defects4j/major/bin:$PATH
-ENV JAVA_TOOL_OPTIONS -Dmajor.export.context=true 
